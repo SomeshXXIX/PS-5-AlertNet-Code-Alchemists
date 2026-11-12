@@ -1,0 +1,13 @@
+node_modules/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+.env
+.env.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+data/*.db
+*.pyc
+__pycache__/
