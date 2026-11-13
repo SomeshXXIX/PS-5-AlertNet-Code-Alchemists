@@ -2,12 +2,19 @@ const express = require('express');
 const router = express.Router();
 const { db } = require('../db');
 const { submitSOS } = require('../services/sosService');
-const { assignTeamToIncident, updateIncidentStatus, overrideSeverity } = require('../services/incidentService');
+const { 
+  assignTeamToIncident, 
+  updateIncidentStatus, 
+  overrideSeverity, 
+  findNearestSuitableTeam, 
+  autoAssignCriticalIncidents 
+} = require('../services/incidentService');
 const { createBroadcastCampaign, seedResidentsIfEmpty } = require('../services/broadcastService');
 const { SIM_CONFIG } = require('../workers/broadcastWorkers');
 const rabbitMQ = require('../queue');
 const redis = require('../redis');
 const { evaluateModel } = require('../ai/evaluate');
+const { v4: uuidv4 } = require('uuid');
 
 // 1. Health Check
 router.get('/health', async (req, res) => {
@@ -108,6 +115,129 @@ router.get('/teams', (req, res) => {
   res.json(teams);
 });
 
+// 6A. Add New Rescue Team
+router.post('/teams', (req, res) => {
+  try {
+    const {
+      name,
+      leaderName,
+      phone,
+      zone,
+      capacity,
+      category,
+      capabilities,
+      latitude,
+      longitude,
+      accuracyMeters,
+      locationSource = 'manual',
+      status = 'AVAILABLE'
+    } = req.body;
+
+    if (!name || typeof name !== 'string' || !name.trim()) {
+      return res.status(400).json({ error: 'Team name is mandatory', code: 'INVALID_NAME' });
+    }
+
+    if (!zone || typeof zone !== 'string' || !zone.trim()) {
+      return res.status(400).json({ error: 'Operating zone is mandatory', code: 'INVALID_ZONE' });
+    }
+
+    const parsedCaps = Array.isArray(capabilities) ? capabilities : (typeof capabilities === 'string' ? JSON.parse(capabilities || '[]') : []);
+    if (parsedCaps.length === 0) {
+      return res.status(400).json({ error: 'At least one capability identifier is required', code: 'NO_CAPABILITIES' });
+    }
+
+    const teamId = req.body.id || `team-${uuidv4().substring(0, 8)}`;
+
+    // Prevent duplicate team ID
+    const existing = db.prepare('SELECT id FROM rescue_teams WHERE id = ?').get(teamId);
+    if (existing) {
+      return res.status(409).json({ error: `Team with ID ${teamId} already exists`, code: 'DUPLICATE_TEAM_ID' });
+    }
+
+    const parsedLat = (latitude !== undefined && latitude !== null && latitude !== '') ? parseFloat(latitude) : null;
+    const parsedLon = (longitude !== undefined && longitude !== null && longitude !== '') ? parseFloat(longitude) : null;
+    const parsedCap = parseInt(capacity) || 10;
+
+    db.prepare(`
+      INSERT INTO rescue_teams (
+        id, name, leader_name, phone, zone, status, capacity,
+        category, capabilities, latitude, longitude, accuracy_meters, location_source, last_location_update
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+    `).run(
+      teamId,
+      name.trim(),
+      leaderName || 'Unit Commander',
+      phone || null,
+      zone.trim(),
+      status || 'AVAILABLE',
+      parsedCap,
+      category || 'General Disaster Response',
+      JSON.stringify(parsedCaps),
+      parsedLat,
+      parsedLon,
+      accuracyMeters ? parseFloat(accuracyMeters) : null,
+      locationSource || 'manual'
+    );
+
+    const createdTeam = db.prepare('SELECT * FROM rescue_teams WHERE id = ?').get(teamId);
+    res.status(201).json({ success: true, team: createdTeam });
+  } catch (err) {
+    res.status(400).json({ error: err.message, code: 'CREATE_TEAM_FAILED' });
+  }
+});
+
+// 6B. Update Team Location (Live Geolocation / Manual Update)
+router.post('/teams/:id/location', (req, res) => {
+  try {
+    const { id } = req.params;
+    const { latitude, longitude, accuracyMeters, source = 'device_gnss' } = req.body;
+
+    const lat = parseFloat(latitude);
+    const lon = parseFloat(longitude);
+
+    if (isNaN(lat) || isNaN(lon)) {
+      return res.status(400).json({ error: 'Valid latitude and longitude are required', code: 'INVALID_COORDINATES' });
+    }
+
+    const team = db.prepare('SELECT * FROM rescue_teams WHERE id = ?').get(id);
+    if (!team) {
+      return res.status(404).json({ error: `Team not found: ${id}`, code: 'TEAM_NOT_FOUND' });
+    }
+
+    db.prepare(`
+      UPDATE rescue_teams 
+      SET latitude = ?, longitude = ?, accuracy_meters = ?, location_source = ?, last_location_update = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).run(lat, lon, accuracyMeters ? parseFloat(accuracyMeters) : null, source, id);
+
+    const updated = db.prepare('SELECT * FROM rescue_teams WHERE id = ?').get(id);
+    res.json({ success: true, team: updated });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// 6C. Find Nearest Suitable Rescue Team for an Incident
+router.get('/incidents/:id/nearest-team', (req, res) => {
+  try {
+    const result = findNearestSuitableTeam(req.params.id);
+    res.json(result);
+  } catch (err) {
+    const statusCode = err.code === 'INCIDENT_NOT_FOUND' ? 404 : 400;
+    res.status(statusCode).json({ error: err.message, code: err.code || 'FIND_TEAM_FAILED' });
+  }
+});
+
+// 6D. Auto-Assign All Critical Incidents
+router.post('/incidents/auto-assign-critical', async (req, res) => {
+  try {
+    const result = await autoAssignCriticalIncidents('Commander_AutoAssign_Button');
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message, code: 'AUTO_ASSIGN_FAILED' });
+  }
+});
+
 // 7. Team Assignment
 router.post('/incidents/:id/assign', async (req, res) => {
   try {
@@ -115,7 +245,8 @@ router.post('/incidents/:id/assign', async (req, res) => {
     const result = await assignTeamToIncident(req.params.id, teamId, requestedBy);
     res.json(result);
   } catch (err) {
-    res.status(409).json({ error: err.message });
+    const statusCode = err.code === 'INCIDENT_NOT_FOUND' || err.code === 'TEAM_NOT_FOUND' ? 404 : 409;
+    res.status(statusCode).json({ error: err.message, code: err.code || 'ASSIGNMENT_FAILED' });
   }
 });
 
