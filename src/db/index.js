@@ -92,6 +92,13 @@ function initSchema() {
       status TEXT DEFAULT 'AVAILABLE', -- AVAILABLE, ASSIGNED, EN_ROUTE, ON_SCENE, RESTING
       current_incident_id TEXT,
       capacity INTEGER DEFAULT 10,
+      category TEXT DEFAULT 'General Disaster Response',
+      capabilities TEXT DEFAULT '["general_disaster_response"]', -- JSON array of capability identifiers
+      latitude REAL,
+      longitude REAL,
+      accuracy_meters REAL,
+      location_source TEXT DEFAULT 'manual', -- 'device_gnss', 'manual', 'unregistered'
+      last_location_update DATETIME,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (current_incident_id) REFERENCES incidents(id)
@@ -140,22 +147,53 @@ function initSchema() {
     );
   `);
 
+  // Ensure new columns exist on existing databases (safe migrations)
+  const columnsToAdd = [
+    { col: 'category', type: "TEXT DEFAULT 'General Disaster Response'" },
+    { col: 'capabilities', type: "TEXT DEFAULT '[\"general_disaster_response\"]'" },
+    { col: 'latitude', type: 'REAL' },
+    { col: 'longitude', type: 'REAL' },
+    { col: 'accuracy_meters', type: 'REAL' },
+    { col: 'location_source', type: "TEXT DEFAULT 'manual'" },
+    { col: 'last_location_update', type: 'DATETIME' }
+  ];
+
+  const existingCols = db.prepare('PRAGMA table_info(rescue_teams)').all().map(c => c.name);
+  for (const { col, type } of columnsToAdd) {
+    if (!existingCols.includes(col)) {
+      try {
+        db.prepare(`ALTER TABLE rescue_teams ADD COLUMN ${col} ${type}`).run();
+      } catch (e) {}
+    }
+  }
+
+  // Ensure sos_reports has accuracy_meters and location_source
+  const existingSosCols = db.prepare('PRAGMA table_info(sos_reports)').all().map(c => c.name);
+  if (!existingSosCols.includes('accuracy_meters')) {
+    try { db.prepare('ALTER TABLE sos_reports ADD COLUMN accuracy_meters REAL').run(); } catch (e) {}
+  }
+  if (!existingSosCols.includes('location_source')) {
+    try { db.prepare("ALTER TABLE sos_reports ADD COLUMN location_source TEXT DEFAULT 'device_gnss'").run(); } catch (e) {}
+  }
+
   // Seed initial rescue teams if empty
   const teamCount = db.prepare('SELECT COUNT(*) as count FROM rescue_teams').get().count;
   if (teamCount === 0) {
     const insertTeam = db.prepare(`
-      INSERT INTO rescue_teams (id, name, leader_name, phone, zone, status, capacity)
-      VALUES (?, ?, ?, ?, ?, 'AVAILABLE', ?)
+      INSERT INTO rescue_teams (
+        id, name, leader_name, phone, zone, status, capacity,
+        category, capabilities, latitude, longitude, location_source, last_location_update
+      ) VALUES (?, ?, ?, ?, ?, 'AVAILABLE', ?, ?, ?, ?, ?, 'manual', CURRENT_TIMESTAMP)
     `);
 
     const teams = [
-      ['team-hyd-01', 'NDRF Alpha 1', 'Capt. R. Sharma', '+91 98765 00001', 'Hyderabad Central', 15],
-      ['team-hyd-02', 'SDRF Bravo 2', 'Insp. K. Rao', '+91 98765 00002', 'Hyderabad South', 12],
-      ['team-hyd-03', 'GHMC Quick Response 3', 'Eng. M. Patel', '+91 98765 00003', 'Hyderabad East', 10],
-      ['team-hyd-04', 'Indian Navy Marine Commando', 'Lt. Cdr. V. Reddy', '+91 98765 00004', 'Hyderabad West', 20],
-      ['team-hyd-05', 'Civil Defence Volunteers', 'S. Meena', '+91 98765 00005', 'Hyderabad North', 8],
-      ['team-vjy-01', 'AP Disaster Response 1', 'Cmdt. A. Kumar', '+91 98765 00006', 'Vijayawada Krishna', 15],
-      ['team-vjy-02', 'Coast Guard Inshore Patrol', 'Sub Lt. B. Naidu', '+91 98765 00007', 'Vijayawada Flood Zone', 18]
+      ['team-hyd-01', 'NDRF Alpha 1', 'Capt. R. Sharma', '+91 98765 00001', 'Hyderabad Central', 15, 'Boat Rescue', JSON.stringify(['water_rescue', 'water_evacuation', 'boat_rescue', 'general_disaster_response']), 17.3850, 78.4867],
+      ['team-hyd-02', 'SDRF Bravo 2', 'Insp. K. Rao', '+91 98765 00002', 'Hyderabad South', 12, 'Divers', JSON.stringify(['underwater_rescue', 'water_rescue', 'first_aid']), 17.3615, 78.4746],
+      ['team-hyd-03', 'GHMC Quick Response 3', 'Eng. M. Patel', '+91 98765 00003', 'Hyderabad East', 10, 'Fire and Hazard Response', JSON.stringify(['fire_response', 'electrical_hazard_response', 'general_disaster_response']), 17.4065, 78.5500],
+      ['team-hyd-04', 'Indian Navy Marine Commando', 'Lt. Cdr. V. Reddy', '+91 98765 00004', 'Hyderabad West', 20, 'Divers', JSON.stringify(['underwater_rescue', 'water_rescue', 'boat_rescue', 'urban_search_rescue']), 17.4399, 78.3908],
+      ['team-hyd-05', 'Civil Defence Volunteers', 'S. Meena', '+91 98765 00005', 'Hyderabad North', 8, 'Medical / Ambulance', JSON.stringify(['medical_evacuation', 'first_aid', 'general_disaster_response']), 17.4375, 78.4983],
+      ['team-vjy-01', 'AP Disaster Response 1', 'Cmdt. A. Kumar', '+91 98765 00006', 'Vijayawada Krishna', 15, 'Water Rescue', JSON.stringify(['water_rescue', 'water_evacuation', 'first_aid']), 16.5062, 80.6480],
+      ['team-vjy-02', 'Coast Guard Inshore Patrol', 'Sub Lt. B. Naidu', '+91 98765 00007', 'Vijayawada Flood Zone', 18, 'Helicopter / Air Rescue', JSON.stringify(['aerial_rescue', 'air_evacuation', 'medical_evacuation']), 16.5200, 80.6200]
     ];
 
     const seedTx = db.transaction(() => {
@@ -164,6 +202,27 @@ function initSchema() {
       }
     });
     seedTx();
+  } else {
+    // If teams already exist, update any missing coordinates or capabilities on the seed teams
+    const defaultCoords = [
+      { id: 'team-hyd-01', category: 'Boat Rescue', caps: ['water_rescue', 'water_evacuation', 'boat_rescue', 'general_disaster_response'], lat: 17.3850, lon: 78.4867 },
+      { id: 'team-hyd-02', category: 'Divers', caps: ['underwater_rescue', 'water_rescue', 'first_aid'], lat: 17.3615, lon: 78.4746 },
+      { id: 'team-hyd-03', category: 'Fire and Hazard Response', caps: ['fire_response', 'electrical_hazard_response', 'general_disaster_response'], lat: 17.4065, lon: 78.5500 },
+      { id: 'team-hyd-04', category: 'Divers', caps: ['underwater_rescue', 'water_rescue', 'boat_rescue', 'urban_search_rescue'], lat: 17.4399, lon: 78.3908 },
+      { id: 'team-hyd-05', category: 'Medical / Ambulance', caps: ['medical_evacuation', 'first_aid', 'general_disaster_response'], lat: 17.4375, lon: 78.4983 },
+      { id: 'team-vjy-01', category: 'Water Rescue', caps: ['water_rescue', 'water_evacuation', 'first_aid'], lat: 16.5062, lon: 80.6480 },
+      { id: 'team-vjy-02', category: 'Helicopter / Air Rescue', caps: ['aerial_rescue', 'air_evacuation', 'medical_evacuation'], lat: 16.5200, lon: 80.6200 }
+    ];
+    for (const d of defaultCoords) {
+      db.prepare(`
+        UPDATE rescue_teams 
+        SET category = COALESCE(category, ?),
+            capabilities = COALESCE(capabilities, ?),
+            latitude = COALESCE(latitude, ?),
+            longitude = COALESCE(longitude, ?)
+        WHERE id = ? AND (latitude IS NULL OR capabilities IS NULL)
+      `).run(d.category, JSON.stringify(d.caps), d.lat, d.lon, d.id);
+    }
   }
 }
 
