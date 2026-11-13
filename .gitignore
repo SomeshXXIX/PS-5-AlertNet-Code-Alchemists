@@ -11,3 +11,7 @@ yarn-error.log*
 data/*.db
 *.pyc
 __pycache__/
+*.zip
+*.exe
+*.log
+
