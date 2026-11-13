@@ -1,0 +1,150 @@
+/* AlertNet Tactical Operations Design System */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+:root {
+  --canvas-bg: #0B1220;
+  --surface-1: #111C2E;
+  --surface-2: #172338;
+  --surface-3: #1E293B;
+  --border-subtle: #1E293B;
+  --border-tactical: #2A3850;
+  --border-focus: #0EA5E9;
+  
+  --red-alert: #EF4444;
+  --red-alert-glow: rgba(239, 68, 68, 0.35);
+  --amber-alert: #F59E0B;
+  --amber-alert-glow: rgba(245, 158, 11, 0.3);
+  --emerald-op: #10B981;
+  --emerald-op-glow: rgba(16, 185, 129, 0.25);
+  --cyan-telemetry: #0EA5E9;
+  --cyan-telemetry-glow: rgba(14, 165, 233, 0.25);
+
+  --text-primary: #F8FAFC;
+  --text-secondary: #94A3B8;
+  --text-muted: #64748B;
+}
+
+body {
+  background-color: var(--canvas-bg);
+  color: var(--text-primary);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.font-mono-tabular {
+  font-family: 'JetBrains Mono', monospace;
+  font-feature-settings: "tnum" 1;
+}
+
+/* Tactical Elevation & Card Panels */
+.ops-panel {
+  background: var(--surface-1);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  position: relative;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.ops-panel:hover {
+  border-color: var(--border-tactical);
+}
+
+.ops-card {
+  background: var(--surface-2);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.ops-card:hover {
+  border-color: #334155;
+  transform: translateY(-1px);
+}
+
+/* Tactical Pulse Radar Animations */
+@keyframes radar-ripple {
+  0% { transform: scale(0.95); opacity: 0.9; }
+  50% { transform: scale(1.6); opacity: 0.3; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+
+.radar-ping {
+  position: relative;
+  display: inline-flex;
+}
+
+.radar-ping::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  border-radius: 9999px;
+  background: inherit;
+  animation: radar-ripple 1.8s cubic-bezier(0, 0.2, 0.8, 1) infinite;
+  z-index: 0;
+}
+
+/* Custom Scrollbars for High-Density Operations */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--surface-1);
+}
+::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
+/* Interactive Field Styling */
+.ops-input {
+  background: #08101E;
+  border: 1px solid #1E293B;
+  color: #F8FAFC;
+  border-radius: 6px;
+  padding: 0.6rem 0.8rem;
+  font-size: 0.875rem;
+  transition: all 0.15s ease;
+}
+
+.ops-input:focus {
+  outline: none;
+  border-color: #0EA5E9;
+  box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.2);
+}
+
+/* Toast Notifications */
+#toastContainer {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.ops-toast {
+  pointer-events: auto;
+  background: var(--surface-2);
+  border: 1px solid var(--border-tactical);
+  color: #F8FAFC;
+  padding: 12px 18px;
+  border-radius: 8px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6);
+  font-size: 0.8125rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  animation: toast-in 0.25s ease-out;
+}
+
+@keyframes toast-in {
+  from { transform: translateY(12px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+

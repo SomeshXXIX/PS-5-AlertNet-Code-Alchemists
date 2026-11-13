@@ -3,293 +3,639 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AlertNet — Flood Response & Citizen SOS Platform</title>
+  <title>AlertNet — National Flood Response & Citizen SOS Platform</title>
   <link rel="manifest" href="/manifest.json">
-  <meta name="theme-color" content="#dc2626">
+  <meta name="theme-color" content="#070C18">
   <link rel="icon" href="/icon.svg">
+  <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <style>
-    @keyframes pulse-fast { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
-    .pulse-fast { animation: pulse-fast 1.2s infinite; }
-  </style>
+  <link rel="stylesheet" href="/style.css">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            opsBase: '#070C18',
+            opsCanvas: '#0B1325',
+            opsSurface1: '#101B33',
+            opsSurface2: '#162342',
+            opsSurface3: '#1E2F56',
+            opsBorder: '#1F2E52',
+            opsBorderLight: '#2C4275',
+            opsRed: '#EF4444',
+            opsAmber: '#F59E0B',
+            opsEmerald: '#10B981',
+            opsSky: '#0EA5E9'
+          }
+        }
+      }
+    }
+  </script>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen font-sans flex flex-col">
+<body class="bg-opsBase text-slate-100 min-h-screen flex flex-col font-sans selection:bg-red-500 selection:text-white antialiased">
 
-  <!-- Top Navigation Bar -->
-  <header class="bg-slate-900 border-b border-slate-800 sticky top-0 z-50 shadow-md">
-    <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-      <div class="flex items-center space-x-3">
-        <div class="w-10 h-10 bg-red-600 rounded-lg flex items-center justify-center text-white shadow-lg shadow-red-600/30">
-          <i class="fa-solid fa-triangle-exclamation text-xl"></i>
+  <!-- Top Strategic Command Header -->
+  <header class="bg-opsSurface1/90 border-b border-opsBorder sticky top-0 z-50 backdrop-blur-xl">
+    <div class="max-w-[1700px] mx-auto px-4 sm:px-6 py-2.5 flex items-center justify-between">
+      
+      <!-- Logo & Tactical Identity -->
+      <div class="flex items-center space-x-3.5">
+        <div class="relative w-9 h-9 rounded-lg bg-gradient-to-br from-red-600 to-rose-700 flex items-center justify-center text-white shadow-lg shadow-red-950/60 border border-red-500/50">
+          <i class="fa-solid fa-triangle-exclamation text-base"></i>
+          <span class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-400 rounded-full radar-ping"></span>
         </div>
         <div>
-          <h1 class="text-xl font-bold tracking-tight text-white flex items-center space-x-2">
-            <span>ALERTNET</span>
-            <span class="text-xs bg-red-950 text-red-400 border border-red-800/80 px-2 py-0.5 rounded-full font-mono">LIVE OPS</span>
-          </h1>
-          <p class="text-xs text-slate-400">Flood Emergency Response & Citizen SOS System</p>
+          <div class="flex items-center space-x-2">
+            <span class="text-base font-black tracking-wider text-white">ALERTNET</span>
+            <span class="text-[9px] font-mono-tabular uppercase px-2 py-0.5 rounded bg-red-950/90 text-red-400 border border-red-700 font-extrabold tracking-wider shadow-sm">
+              DEFCON 1 &bull; FLOOD OPERATIONS
+            </span>
+          </div>
+          <p class="text-[11px] text-slate-400 hidden sm:block">National Disaster Response & Citizen Emergency Triage Command</p>
         </div>
       </div>
 
-      <!-- Mode & Language Selector -->
+      <!-- Center Nav Tabs -->
+      <nav class="hidden md:flex items-center bg-opsBase p-1 rounded-xl border border-opsBorder shadow-inner">
+        <button id="tabCitizen" class="px-4 py-1.5 text-xs font-bold rounded-lg bg-red-600 text-white shadow-md shadow-red-900/40 transition flex items-center gap-2">
+          <i class="fa-solid fa-tower-broadcast text-xs"></i>
+          <span>Citizen SOS</span>
+        </button>
+        <button id="tabDashboard" class="px-4 py-1.5 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition flex items-center gap-2">
+          <i class="fa-solid fa-shield-halved text-xs"></i>
+          <span>Command Center</span>
+          <span id="navIncidentBadge" class="hidden px-1.5 py-0.2 text-[10px] font-mono-tabular bg-red-950 text-red-400 border border-red-800 rounded-full font-bold">0</span>
+        </button>
+        <button id="tabBroadcast" class="px-4 py-1.5 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition flex items-center gap-2">
+          <i class="fa-solid fa-bullhorn text-xs"></i>
+          <span>Warning Broadcasts</span>
+        </button>
+        <button id="tabDrills" class="px-4 py-1.5 text-xs font-semibold rounded-lg text-slate-400 hover:text-white transition flex items-center gap-2">
+          <i class="fa-solid fa-flask-vial text-xs"></i>
+          <span>Resilience Drills</span>
+        </button>
+      </nav>
+
+      <!-- Right Telemetry Strip & Language -->
       <div class="flex items-center space-x-3">
-        <select id="langSelect" class="bg-slate-800 text-xs text-slate-200 border border-slate-700 rounded-md px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-red-500">
-          <option value="en">English</option>
-          <option value="hi">हिंदी (Hindi)</option>
-          <option value="te">తెలుగు (Telugu)</option>
-        </select>
-
-        <div class="flex bg-slate-800 p-1 rounded-lg border border-slate-700">
-          <button id="tabCitizen" class="px-3 py-1 text-xs font-semibold rounded-md bg-red-600 text-white transition">
-            <i class="fa-solid fa-tower-broadcast mr-1"></i> Citizen SOS
-          </button>
-          <button id="tabDashboard" class="px-3 py-1 text-xs font-semibold rounded-md text-slate-400 hover:text-white transition">
-            <i class="fa-solid fa-shield-halved mr-1"></i> Command Center
-          </button>
-          <button id="tabBroadcast" class="px-3 py-1 text-xs font-semibold rounded-md text-slate-400 hover:text-white transition">
-            <i class="fa-solid fa-bullhorn mr-1"></i> Warning Broadcasts
-          </button>
-          <button id="tabDrills" class="px-3 py-1 text-xs font-semibold rounded-md text-slate-400 hover:text-white transition">
-            <i class="fa-solid fa-flask-vial mr-1"></i> Failure Drills
-          </button>
+        <!-- Live Mission Clock -->
+        <div class="hidden lg:flex flex-col items-end px-3 py-1 bg-opsSurface2/80 border border-opsBorder rounded-lg">
+          <span class="text-[9px] uppercase font-mono-tabular text-slate-400">MISSION CLOCK</span>
+          <span id="missionClock" class="text-xs font-mono-tabular font-bold text-opsSky tracking-wider">00:00:00 IST</span>
         </div>
+
+        <!-- Language Selector -->
+        <div class="relative">
+          <select id="langSelect" class="bg-opsSurface2 text-xs text-slate-200 border border-opsBorder rounded-lg px-3 py-1.5 focus:outline-none focus:border-opsSky font-medium transition cursor-pointer">
+            <option value="en">English (US)</option>
+            <option value="hi">हिंदी (Hindi)</option>
+            <option value="te">తెలుగు (Telugu)</option>
+          </select>
+        </div>
+
+        <!-- Mobile Menu Toggle Button -->
+        <button id="mobileMenuBtn" class="md:hidden p-2 rounded-lg bg-opsSurface2 border border-opsBorder text-slate-300 hover:text-white">
+          <i class="fa-solid fa-bars text-sm"></i>
+        </button>
       </div>
+    </div>
+
+    <!-- Mobile Navigation Drawer -->
+    <div id="mobileMenu" class="hidden md:hidden bg-opsSurface1 border-b border-opsBorder px-4 py-3 space-y-2">
+      <button id="mobTabCitizen" class="w-full text-left px-3 py-2 text-xs font-semibold rounded-lg bg-red-600 text-white flex items-center justify-between">
+        <span><i class="fa-solid fa-tower-broadcast mr-2"></i> Citizen SOS</span>
+      </button>
+      <button id="mobTabDashboard" class="w-full text-left px-3 py-2 text-xs font-semibold rounded-lg text-slate-300 hover:bg-opsSurface2 flex items-center justify-between">
+        <span><i class="fa-solid fa-shield-halved mr-2"></i> Command Center</span>
+      </button>
+      <button id="mobTabBroadcast" class="w-full text-left px-3 py-2 text-xs font-semibold rounded-lg text-slate-300 hover:bg-opsSurface2 flex items-center justify-between">
+        <span><i class="fa-solid fa-bullhorn mr-2"></i> Warning Broadcasts</span>
+      </button>
+      <button id="mobTabDrills" class="w-full text-left px-3 py-2 text-xs font-semibold rounded-lg text-slate-300 hover:bg-opsSurface2 flex items-center justify-between">
+        <span><i class="fa-solid fa-flask-vial mr-2"></i> Resilience Drills</span>
+      </button>
     </div>
   </header>
 
-  <!-- Network Banner -->
-  <div id="offlineBanner" class="hidden bg-amber-600 text-white text-xs py-1 px-4 text-center font-medium">
-    <i class="fa-solid fa-wifi mr-2"></i> You are currently OFFLINE. SOS reports will be saved securely and synced automatically when signal returns.
+  <!-- Offline Status Banner -->
+  <div id="offlineBanner" class="hidden bg-amber-600 text-white text-xs py-2 px-4 text-center font-medium shadow-inner flex items-center justify-center space-x-2">
+    <i class="fa-solid fa-wifi-slash animate-bounce"></i>
+    <span>NETWORK OFFLINE: SOS reports will be cached locally on your device and auto-synced the moment connection is restored.</span>
   </div>
 
+  <!-- Toast Container for Micro-Interactions -->
+  <div id="toastContainer"></div>
+
   <!-- MAIN APP CONTAINER -->
-  <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6">
+  <main class="flex-1 max-w-[1700px] w-full mx-auto p-4 sm:p-6 lg:p-8">
 
-    <!-- VIEW 1: CITIZEN SOS PORTAL -->
-    <section id="viewCitizen" class="max-w-xl mx-auto space-y-6">
+    <!-- ================= VIEW 1: CITIZEN SOS (TWO-COLUMN COMMAND PORTAL) ================= -->
+    <section id="viewCitizen" class="space-y-6">
       
-      <!-- SOS Status Card if already submitted -->
-      <div id="sosStatusCard" class="hidden bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl">
-        <div class="flex items-center justify-between pb-3 border-b border-slate-800">
-          <div class="flex items-center space-x-2">
-            <span id="statusPulse" class="w-3 h-3 rounded-full bg-amber-500 pulse-fast"></span>
-            <span id="sosStatusText" class="font-bold text-sm tracking-wide text-amber-400">RECEIVED</span>
+      <!-- Top Tactical Banner Strip -->
+      <div class="bg-gradient-to-r from-red-950/70 via-opsSurface2 to-opsSurface1 border border-red-900/60 rounded-2xl p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xl">
+        <div class="flex items-center space-x-4">
+          <div class="w-12 h-12 rounded-xl bg-red-600/20 text-red-500 border border-red-500/30 flex items-center justify-center text-xl shrink-0">
+            <i class="fa-solid fa-tower-broadcast animate-pulse"></i>
           </div>
-          <span id="sosReportId" class="text-xs font-mono text-slate-500">ID: ...</span>
-        </div>
-
-        <div class="mt-4 space-y-3">
-          <div class="flex justify-between text-xs">
-            <span class="text-slate-400" id="lblCategory">Category:</span>
-            <span id="sosReportCat" class="font-medium text-slate-200">Trapped / Flood Rescue</span>
-          </div>
-          <div class="flex justify-between text-xs">
-            <span class="text-slate-400" id="lblLocation">Location:</span>
-            <span id="sosReportLoc" class="font-medium text-slate-200">17.3850, 78.4867</span>
-          </div>
-          <div class="flex justify-between text-xs">
-            <span class="text-slate-400" id="lblAssignedTeam">Assigned Team:</span>
-            <span id="sosReportTeam" class="font-medium text-blue-400">Searching for available team...</span>
-          </div>
-          <div class="flex justify-between text-xs">
-            <span class="text-slate-400" id="lblEnRoute">Status:</span>
-            <span id="sosReportTeamStatus" class="font-medium text-amber-300">Under Review</span>
+          <div>
+            <div class="flex items-center space-x-2">
+              <span class="w-2.5 h-2.5 bg-red-500 rounded-full radar-ping"></span>
+              <h2 class="text-sm font-extrabold uppercase tracking-wider text-red-400 font-mono-tabular">CIVILIAN FLOOD RESCUE PORTAL</h2>
+            </div>
+            <p class="text-xs text-slate-300 mt-0.5">Direct satellite/cellular ingestion link to National Disaster Response Units</p>
           </div>
         </div>
 
-        <button id="btnNewSOS" class="mt-4 w-full bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 py-2 rounded-lg font-medium transition">
-          Submit Another Emergency Report
+        <!-- Telemetry quick stats -->
+        <div class="flex items-center gap-3 text-xs font-mono-tabular">
+          <div class="bg-opsBase/80 px-3 py-1.5 rounded-lg border border-opsBorder flex items-center space-x-2">
+            <span class="text-slate-400">STATUS:</span>
+            <span class="text-opsEmerald font-bold flex items-center gap-1"><i class="fa-solid fa-circle-check text-[10px]"></i> INGESTION ACTIVE</span>
+          </div>
+          <div class="bg-opsBase/80 px-3 py-1.5 rounded-lg border border-opsBorder flex items-center space-x-2">
+            <span class="text-slate-400">DISPATCH DELAY:</span>
+            <span class="text-opsSky font-bold">&lt; 1.8s OUTBOX</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Active Report Status Card (Displayed when SOS submitted) -->
+      <div id="sosStatusCard" class="hidden ops-panel p-6 shadow-2xl border-l-4 border-l-amber-500">
+        <div class="flex items-center justify-between pb-4 border-b border-opsBorder">
+          <div class="flex items-center space-x-3">
+            <span class="w-3.5 h-3.5 rounded-full bg-amber-500 radar-ping"></span>
+            <div>
+              <span class="text-xs uppercase font-mono-tabular tracking-wider text-slate-400">Current Incident Lifecycle</span>
+              <h3 id="sosStatusText" class="font-bold text-base tracking-wide text-amber-400">RECEIVED</h3>
+            </div>
+          </div>
+          <span id="sosReportId" class="text-xs font-mono-tabular text-slate-400 bg-opsBase px-2.5 py-1 rounded border border-opsBorder">ID: ...</span>
+        </div>
+
+        <!-- Real-Time Timeline Progress -->
+        <div class="my-5 grid grid-cols-4 gap-2 text-center text-[10px] font-mono-tabular uppercase">
+          <div id="stepReceived" class="p-2 rounded bg-amber-950/60 text-amber-400 border border-amber-800/80 font-bold">1. Received</div>
+          <div id="stepReview" class="p-2 rounded bg-opsBase text-slate-500 border border-opsBorder">2. Triage</div>
+          <div id="stepAssigned" class="p-2 rounded bg-opsBase text-slate-500 border border-opsBorder">3. Assigned</div>
+          <div id="stepEnRoute" class="p-2 rounded bg-opsBase text-slate-500 border border-opsBorder">4. En Route</div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+          <div class="bg-opsBase p-3 rounded-lg border border-opsBorder">
+            <span class="text-slate-400 block text-[10px] uppercase font-mono-tabular" id="lblCategory">EMERGENCY CLASSIFICATION</span>
+            <span id="sosReportCat" class="font-semibold text-slate-200 mt-1 block">Trapped in Flood Water</span>
+          </div>
+          <div class="bg-opsBase p-3 rounded-lg border border-opsBorder">
+            <span class="text-slate-400 block text-[10px] uppercase font-mono-tabular" id="lblLocation">COORDINATES & ADDRESS</span>
+            <span id="sosReportLoc" class="font-semibold text-slate-200 mt-1 block font-mono-tabular">17.3850, 78.4867</span>
+          </div>
+          <div class="bg-opsBase p-3 rounded-lg border border-opsBorder">
+            <span class="text-slate-400 block text-[10px] uppercase font-mono-tabular" id="lblAssignedTeam">DEPLOYED RESCUE UNIT</span>
+            <span id="sosReportTeam" class="font-semibold text-opsSky mt-1 block">Assessing emergency sector...</span>
+          </div>
+          <div class="bg-opsBase p-3 rounded-lg border border-opsBorder">
+            <span class="text-slate-400 block text-[10px] uppercase font-mono-tabular" id="lblEnRoute">DISASTER RESPONSE STATUS</span>
+            <span id="sosReportTeamStatus" class="font-semibold text-amber-300 mt-1 block">Under AI Triage Review</span>
+          </div>
+        </div>
+
+        <button id="btnNewSOS" class="mt-5 w-full bg-opsSurface2 hover:bg-opsSurface3 text-xs text-slate-300 py-2.5 rounded-lg font-medium border border-opsBorder transition flex items-center justify-center gap-2">
+          <i class="fa-solid fa-plus text-xs"></i>
+          <span>Submit Another Emergency Report</span>
         </button>
       </div>
 
-      <!-- Emergency Form -->
-      <div id="sosFormContainer" class="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-2xl relative overflow-hidden">
-        <div class="absolute -right-10 -bottom-10 w-40 h-40 bg-red-600/10 rounded-full blur-2xl pointer-events-none"></div>
+      <!-- Two-Column Desktop Layout: Left Hero/Protocol Panel + Right Ingestion Form -->
+      <div id="sosFormContainer" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Left Column: Situation Awareness & Emergency Guidance (5 cols) -->
+        <div class="lg:col-span-5 space-y-5">
+          <div class="ops-panel p-6 shadow-xl relative overflow-hidden h-full flex flex-col justify-between">
+            <div>
+              <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-red-950/80 border border-red-800 text-red-400 text-xs font-mono-tabular font-bold uppercase mb-3">
+                <span class="w-2 h-2 rounded-full bg-red-500 radar-ping"></span>
+                <span>URGENT CIVILIAN PROTOCOL</span>
+              </div>
+              <h1 id="txtSosTitle" class="text-3xl sm:text-4xl font-black text-white tracking-tight leading-tight">
+                CRITICAL FLOOD SOS DISPATCH
+              </h1>
+              <p id="txtSosSubtitle" class="text-xs text-slate-300 mt-2.5 leading-relaxed">
+                If you are submerged, trapped on rooftops, or facing medical peril, transmit an immediate distress signal. Every submission commits to durable storage and alerts active NDRF/SDRF units in your sector.
+              </p>
 
-        <div class="text-center mb-6">
-          <h2 id="txtSosTitle" class="text-2xl font-black text-red-500 tracking-wide">EMERGENCY SOS</h2>
-          <p id="txtSosSubtitle" class="text-xs text-slate-400 mt-1">Direct channel to Disaster Management Command Control</p>
+              <!-- Life-Safety Guidelines -->
+              <div class="mt-6 space-y-3">
+                <div class="p-3.5 rounded-xl bg-opsBase/80 border border-opsBorder flex items-start space-x-3">
+                  <div class="w-7 h-7 rounded-lg bg-red-600/20 text-red-400 flex items-center justify-center shrink-0 mt-0.5">
+                    <i class="fa-solid fa-water-ladder text-xs"></i>
+                  </div>
+                  <div>
+                    <h4 class="text-xs font-bold text-slate-200">Rooftop & High Ground</h4>
+                    <p class="text-[11px] text-slate-400 mt-0.5">Do not enter attic spaces without roof access. Move to open upper levels with visual signaling.</p>
+                  </div>
+                </div>
+
+                <div class="p-3.5 rounded-xl bg-opsBase/80 border border-opsBorder flex items-start space-x-3">
+                  <div class="w-7 h-7 rounded-lg bg-amber-600/20 text-amber-400 flex items-center justify-center shrink-0 mt-0.5">
+                    <i class="fa-solid fa-bolt-lightning text-xs"></i>
+                  </div>
+                  <div>
+                    <h4 class="text-xs font-bold text-slate-200">Electrocution Hazard</h4>
+                    <p class="text-[11px] text-slate-400 mt-0.5">Avoid submerged electrical poles and main breaker panels. Do not touch wet conductive wires.</p>
+                  </div>
+                </div>
+
+                <div class="p-3.5 rounded-xl bg-opsBase/80 border border-opsBorder flex items-start space-x-3">
+                  <div class="w-7 h-7 rounded-lg bg-opsSky/20 text-opsSky flex items-center justify-center shrink-0 mt-0.5">
+                    <i class="fa-solid fa-signal text-xs"></i>
+                  </div>
+                  <div>
+                    <h4 class="text-xs font-bold text-slate-200">Offline Resilience</h4>
+                    <p class="text-[11px] text-slate-400 mt-0.5">Weak cellular signal? AlertNet buffers your report on-device and auto-syncs the millisecond network packets connect.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-6 pt-4 border-t border-opsBorder flex items-center justify-between text-[11px] text-slate-400 font-mono-tabular">
+              <span><i class="fa-solid fa-shield-halved text-opsEmerald mr-1"></i> 100% Guaranteed Outbox Recording</span>
+              <span>EST. RESPONSE: 3-8 MIN</span>
+            </div>
+          </div>
         </div>
 
-        <form id="sosForm" class="space-y-4">
-          <!-- Emergency Category -->
-          <div>
-            <label id="lblFormCategory" class="block text-xs font-semibold text-slate-300 mb-1">EMERGENCY TYPE</label>
-            <select id="category" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm text-slate-100 focus:ring-2 focus:ring-red-500">
-              <option value="TRAPPED_FLOOD">Trapped in Flood Water / Submerged Building</option>
-              <option value="MEDICAL_EMERGENCY">Critical Medical Emergency / Injured</option>
-              <option value="CHILD_ELDERLY">Children / Pregnant Women / Elderly at Risk</option>
-              <option value="FOOD_WATER">Food & Clean Drinking Water Exhaustion</option>
-              <option value="GENERAL_EVACUATION">Request Evacuation Assistance</option>
-            </select>
-          </div>
-
-          <!-- Description -->
-          <div>
-            <label id="lblFormDesc" class="block text-xs font-semibold text-slate-300 mb-1">SITUATION DETAILS (English / हिंदी / తెలుగు)</label>
-            <textarea id="description" rows="3" required placeholder="e.g. Water reached 1st floor, 4 people trapped on roof including elderly patient" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm text-slate-100 focus:ring-2 focus:ring-red-500"></textarea>
-          </div>
-
-          <!-- People Affected & Vulnerable -->
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label id="lblFormPeople" class="block text-xs font-semibold text-slate-300 mb-1">PEOPLE AFFECTED</label>
-              <input type="number" id="affectedPeople" min="1" max="100" value="1" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm text-slate-100">
+        <!-- Right Column: Emergency Transmission Form (7 cols) -->
+        <div class="lg:col-span-7">
+          <div class="ops-panel p-6 sm:p-7 shadow-2xl relative border-t-4 border-t-red-600">
+            <div class="flex items-center justify-between pb-4 mb-4 border-b border-opsBorder">
+              <div>
+                <h3 class="text-base font-bold text-white flex items-center gap-2">
+                  <i class="fa-solid fa-pen-to-square text-red-500"></i>
+                  <span>Incident Report Transmission</span>
+                </h3>
+                <p class="text-[11px] text-slate-400">Provide situation specifics for automated AI triage and rescue asset allocation</p>
+              </div>
+              <span class="text-[10px] font-mono-tabular bg-red-950/80 text-red-400 border border-red-800 px-2 py-0.5 rounded font-bold uppercase">
+                PRIORITY P0
+              </span>
             </div>
-            <div>
-              <label id="lblFormVulnerable" class="block text-xs font-semibold text-slate-300 mb-1">VULNERABLE (Kids/Seniors)</label>
-              <input type="number" id="vulnerableCount" min="0" max="50" value="0" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm text-slate-100">
-            </div>
-          </div>
 
-          <!-- Location Coordinates -->
-          <div>
-            <div class="flex justify-between items-center mb-1">
-              <label id="lblFormLoc" class="text-xs font-semibold text-slate-300">LOCATION</label>
-              <button type="button" id="btnGetLocation" class="text-xs text-red-400 hover:text-red-300 flex items-center">
-                <i class="fa-solid fa-location-crosshairs mr-1"></i> Detect GPS
+            <form id="sosForm" class="space-y-4">
+              <!-- Emergency Category -->
+              <div>
+                <label id="lblFormCategory" class="block text-xs font-semibold text-slate-300 mb-1.5 uppercase font-mono-tabular tracking-wider">
+                  1. SELECT EMERGENCY TYPE
+                </label>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                  <label class="cursor-pointer">
+                    <input type="radio" name="catRadio" value="TRAPPED_FLOOD" checked class="peer sr-only">
+                    <div class="p-3 rounded-xl border border-opsBorder bg-opsBase peer-checked:border-red-500 peer-checked:bg-red-950/40 peer-checked:text-white text-slate-300 hover:border-opsBorderLight transition flex items-center space-x-3">
+                      <div class="w-8 h-8 rounded-lg bg-red-600/20 text-red-400 flex items-center justify-center shrink-0">
+                        <i class="fa-solid fa-house-flood-water text-sm"></i>
+                      </div>
+                      <div>
+                        <span class="font-bold block">Trapped in Flood Water</span>
+                        <span class="text-[10px] text-slate-400">Building submerged / roof isolation</span>
+                      </div>
+                    </div>
+                  </label>
+                  <label class="cursor-pointer">
+                    <input type="radio" name="catRadio" value="MEDICAL_EMERGENCY" class="peer sr-only">
+                    <div class="p-3 rounded-xl border border-opsBorder bg-opsBase peer-checked:border-red-500 peer-checked:bg-red-950/40 peer-checked:text-white text-slate-300 hover:border-opsBorderLight transition flex items-center space-x-3">
+                      <div class="w-8 h-8 rounded-lg bg-rose-600/20 text-rose-400 flex items-center justify-center shrink-0">
+                        <i class="fa-solid fa-heart-pulse text-sm"></i>
+                      </div>
+                      <div>
+                        <span class="font-bold block">Critical Medical</span>
+                        <span class="text-[10px] text-slate-400">Injuries / diabetic / oxygen needed</span>
+                      </div>
+                    </div>
+                  </label>
+                  <label class="cursor-pointer">
+                    <input type="radio" name="catRadio" value="CHILD_ELDERLY" class="peer sr-only">
+                    <div class="p-3 rounded-xl border border-opsBorder bg-opsBase peer-checked:border-red-500 peer-checked:bg-red-950/40 peer-checked:text-white text-slate-300 hover:border-opsBorderLight transition flex items-center space-x-3">
+                      <div class="w-8 h-8 rounded-lg bg-amber-600/20 text-amber-400 flex items-center justify-center shrink-0">
+                        <i class="fa-solid fa-person-breastfeeding text-sm"></i>
+                      </div>
+                      <div>
+                        <span class="font-bold block">Children / Seniors</span>
+                        <span class="text-[10px] text-slate-400">Infants / pregnant / bedridden</span>
+                      </div>
+                    </div>
+                  </label>
+                  <label class="cursor-pointer">
+                    <input type="radio" name="catRadio" value="FOOD_WATER" class="peer sr-only">
+                    <div class="p-3 rounded-xl border border-opsBorder bg-opsBase peer-checked:border-red-500 peer-checked:bg-red-950/40 peer-checked:text-white text-slate-300 hover:border-opsBorderLight transition flex items-center space-x-3">
+                      <div class="w-8 h-8 rounded-lg bg-sky-600/20 text-sky-400 flex items-center justify-center shrink-0">
+                        <i class="fa-solid fa-bottle-water text-sm"></i>
+                      </div>
+                      <div>
+                        <span class="font-bold block">Food & Drinking Water</span>
+                        <span class="text-[10px] text-slate-400">Exhausted supplies / starvation</span>
+                      </div>
+                    </div>
+                  </label>
+                </div>
+                <!-- Hidden select for compatibility -->
+                <select id="category" class="hidden">
+                  <option value="TRAPPED_FLOOD">Trapped in Flood Water</option>
+                  <option value="MEDICAL_EMERGENCY">Critical Medical Emergency</option>
+                  <option value="CHILD_ELDERLY">Children / Seniors at Risk</option>
+                  <option value="FOOD_WATER">Food & Water Depletion</option>
+                  <option value="GENERAL_EVACUATION">Request Evacuation Assistance</option>
+                </select>
+              </div>
+
+              <!-- Situation Details Description -->
+              <div>
+                <div class="flex justify-between items-center mb-1.5">
+                  <label id="lblFormDesc" class="text-xs font-semibold text-slate-300 uppercase font-mono-tabular tracking-wider">
+                    2. SITUATION DETAILS (English / हिंदी / తెలుగు)
+                  </label>
+                  <span class="text-[10px] text-slate-400 font-mono-tabular">Hybrid NLP Parser</span>
+                </div>
+                <textarea id="description" rows="3" required placeholder="Describe your exact location, floor number, water depth, and urgent needs..." class="ops-input w-full resize-none"></textarea>
+              </div>
+
+              <!-- People Affected & Vulnerable -->
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label id="lblFormPeople" class="block text-xs font-semibold text-slate-300 mb-1.5 uppercase font-mono-tabular tracking-wider">
+                    PEOPLE AFFECTED
+                  </label>
+                  <div class="relative">
+                    <input type="number" id="affectedPeople" min="1" max="100" value="1" class="ops-input w-full font-mono-tabular font-bold">
+                    <span class="absolute right-3 top-2.5 text-xs text-slate-400"><i class="fa-solid fa-users"></i></span>
+                  </div>
+                </div>
+                <div>
+                  <label id="lblFormVulnerable" class="block text-xs font-semibold text-slate-300 mb-1.5 uppercase font-mono-tabular tracking-wider">
+                    VULNERABLE (Kids/Elderly)
+                  </label>
+                  <div class="relative">
+                    <input type="number" id="vulnerableCount" min="0" max="50" value="0" class="ops-input w-full font-mono-tabular font-bold">
+                    <span class="absolute right-3 top-2.5 text-xs text-slate-400"><i class="fa-solid fa-person-walking-with-cane"></i></span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Location Coordinates & GPS Detect -->
+              <div>
+                <div class="flex justify-between items-center mb-1.5">
+                  <label id="lblFormLoc" class="text-xs font-semibold text-slate-300 uppercase font-mono-tabular tracking-wider">
+                    3. INCIDENT COORDINATES & ADDRESS
+                  </label>
+                  <button type="button" id="btnGetLocation" class="text-xs text-opsSky hover:text-sky-300 flex items-center gap-1.5 font-mono-tabular transition font-bold cursor-pointer">
+                    <i class="fa-solid fa-location-crosshairs"></i>
+                    <span>Detect Geolocation</span>
+                  </button>
+                </div>
+                <div class="grid grid-cols-2 gap-2 mb-2">
+                  <div class="relative">
+                    <span class="absolute left-3 top-2.5 text-[10px] font-mono-tabular text-slate-400 font-bold">LAT</span>
+                    <input type="number" step="any" id="latitude" value="17.3850" class="ops-input w-full pl-11 font-mono-tabular">
+                  </div>
+                  <div class="relative">
+                    <span class="absolute left-3 top-2.5 text-[10px] font-mono-tabular text-slate-400 font-bold">LON</span>
+                    <input type="number" step="any" id="longitude" value="78.4867" class="ops-input w-full pl-11 font-mono-tabular">
+                  </div>
+                </div>
+                <input type="text" id="addressText" placeholder="Street / Colony / Landmark (e.g. Near Musi River Bridge, Hyderabad)" class="ops-input w-full">
+              </div>
+
+              <!-- Citizen Phone -->
+              <div>
+                <label id="lblFormPhone" class="block text-xs font-semibold text-slate-300 mb-1.5 uppercase font-mono-tabular tracking-wider">
+                  4. CITIZEN PHONE NUMBER
+                </label>
+                <input type="tel" id="phone" placeholder="+91 98765 43210" class="ops-input w-full font-mono-tabular">
+              </div>
+
+              <!-- Submit Button -->
+              <button type="submit" id="btnSubmitSOS" class="w-full bg-gradient-to-r from-red-600 via-rose-600 to-red-600 hover:from-red-500 hover:to-rose-500 active:scale-[0.99] text-white font-black py-4 px-4 rounded-xl shadow-xl shadow-red-950/70 text-sm tracking-wider uppercase transition flex items-center justify-center space-x-2 border border-red-500/60 cursor-pointer">
+                <i class="fa-solid fa-paper-plane text-base"></i>
+                <span id="btnSubmitText">TRANSMIT EMERGENCY SOS NOW</span>
               </button>
-            </div>
-            <div class="grid grid-cols-2 gap-2">
-              <input type="number" step="any" id="latitude" value="17.3850" placeholder="Latitude" class="bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs text-slate-100">
-              <input type="number" step="any" id="longitude" value="78.4867" placeholder="Longitude" class="bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs text-slate-100">
-            </div>
-            <input type="text" id="addressText" placeholder="Landmark / Street Address (e.g. Near Musi River Bridge, Hyderabad)" class="mt-2 w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs text-slate-100">
+            </form>
           </div>
+        </div>
 
-          <!-- Citizen Phone -->
-          <div>
-            <label id="lblFormPhone" class="block text-xs font-semibold text-slate-300 mb-1">CONTACT PHONE NUMBER</label>
-            <input type="tel" id="phone" placeholder="+91 98765 43210" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2.5 text-sm text-slate-100">
-          </div>
-
-          <!-- Submit Button -->
-          <button type="submit" id="btnSubmitSOS" class="w-full bg-red-600 hover:bg-red-700 active:scale-[0.98] text-white font-bold py-3.5 px-4 rounded-xl shadow-lg shadow-red-600/40 text-sm tracking-wide transition flex items-center justify-center space-x-2">
-            <i class="fa-solid fa-paper-plane"></i>
-            <span id="btnSubmitText">SEND EMERGENCY SOS NOW</span>
-          </button>
-        </form>
       </div>
     </section>
 
-    <!-- VIEW 2: COMMAND DASHBOARD -->
+    <!-- ================= VIEW 2: COMMAND CENTER ================= -->
     <section id="viewDashboard" class="hidden space-y-6">
-      <!-- Live Metrics Bar -->
+      
+      <!-- Telemetry Strip (Key Metrics) -->
       <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
-        <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl">
-          <p class="text-[11px] text-slate-400 uppercase font-semibold">Total SOS</p>
-          <p id="mTotalSOS" class="text-2xl font-black text-slate-100 mt-1">0</p>
+        <div class="ops-panel p-3.5 flex flex-col justify-between">
+          <span class="text-[10px] font-mono-tabular uppercase text-slate-400">TOTAL CITIZEN SOS</span>
+          <p id="mTotalSOS" class="text-2xl font-mono-tabular font-black text-white mt-1">0</p>
+          <span class="text-[9px] text-slate-400 flex items-center gap-1 mt-1"><i class="fa-solid fa-database text-opsSky"></i> Durable WAL</span>
         </div>
-        <div class="bg-slate-900 border border-red-900/60 p-3 rounded-xl">
-          <p class="text-[11px] text-red-400 uppercase font-semibold flex items-center"><i class="fa-solid fa-circle-exclamation mr-1"></i> Critical</p>
-          <p id="mCritical" class="text-2xl font-black text-red-500 mt-1">0</p>
+        <div class="ops-panel p-3.5 border-red-900/60 flex flex-col justify-between bg-red-950/20">
+          <span class="text-[10px] font-mono-tabular uppercase text-red-400 flex items-center gap-1.5">
+            <span class="w-1.5 h-1.5 rounded-full bg-red-500 radar-ping"></span> Critical Breaches
+          </span>
+          <p id="mCritical" class="text-2xl font-mono-tabular font-black text-red-500 mt-1">0</p>
+          <span class="text-[9px] text-red-400 font-semibold">Priority Triage &ge; 80</span>
         </div>
-        <div class="bg-slate-900 border border-amber-900/60 p-3 rounded-xl">
-          <p class="text-[11px] text-amber-400 uppercase font-semibold">Urgent</p>
-          <p id="mUrgent" class="text-2xl font-black text-amber-400 mt-1">0</p>
+        <div class="ops-panel p-3.5 border-amber-900/60 flex flex-col justify-between bg-amber-950/20">
+          <span class="text-[10px] font-mono-tabular uppercase text-amber-400">Urgent Incidents</span>
+          <p id="mUrgent" class="text-2xl font-mono-tabular font-black text-amber-400 mt-1">0</p>
+          <span class="text-[9px] text-amber-400/80">Rising Flood Water</span>
         </div>
-        <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl">
-          <p class="text-[11px] text-blue-400 uppercase font-semibold">Informational</p>
-          <p id="mInfo" class="text-2xl font-black text-blue-400 mt-1">0</p>
+        <div class="ops-panel p-3.5 flex flex-col justify-between">
+          <span class="text-[10px] font-mono-tabular uppercase text-opsSky">Informational</span>
+          <p id="mInfo" class="text-2xl font-mono-tabular font-black text-opsSky mt-1">0</p>
+          <span class="text-[9px] text-slate-400">Advisory reports</span>
         </div>
-        <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl">
-          <p class="text-[11px] text-slate-400 uppercase font-semibold">Unassigned</p>
-          <p id="mUnassigned" class="text-2xl font-black text-orange-400 mt-1">0</p>
+        <div class="ops-panel p-3.5 flex flex-col justify-between">
+          <span class="text-[10px] font-mono-tabular uppercase text-orange-400">Unassigned Queue</span>
+          <p id="mUnassigned" class="text-2xl font-mono-tabular font-black text-orange-400 mt-1">0</p>
+          <span class="text-[9px] text-orange-400/80">Awaiting Unit Vector</span>
         </div>
-        <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl">
-          <p class="text-[11px] text-slate-400 uppercase font-semibold">Active Teams</p>
-          <p id="mActiveTeams" class="text-2xl font-black text-emerald-400 mt-1">0</p>
+        <div class="ops-panel p-3.5 flex flex-col justify-between">
+          <span class="text-[10px] font-mono-tabular uppercase text-opsEmerald">Active Units</span>
+          <p id="mActiveTeams" class="text-2xl font-mono-tabular font-black text-opsEmerald mt-1">0</p>
+          <span class="text-[9px] text-opsEmerald/80">NDRF & SDRF Deployed</span>
         </div>
-        <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl">
-          <p class="text-[11px] text-slate-400 uppercase font-semibold">Available</p>
-          <p id="mAvailableTeams" class="text-2xl font-black text-slate-200 mt-1">0</p>
+        <div class="ops-panel p-3.5 flex flex-col justify-between">
+          <span class="text-[10px] font-mono-tabular uppercase text-slate-400">Ready Reserve</span>
+          <p id="mAvailableTeams" class="text-2xl font-mono-tabular font-black text-slate-200 mt-1">0</p>
+          <span class="text-[9px] text-slate-400">Standby Fleet</span>
         </div>
       </div>
 
-      <!-- Main Command Grid: Incidents Table + Rescue Teams -->
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Tactical Command Deck (GIS Tactical Radar Map + Incident Feed) -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
-        <!-- Incidents List (Col 2) -->
-        <div class="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl">
-          <div class="flex items-center justify-between mb-4">
-            <div>
-              <h2 class="text-lg font-bold text-white flex items-center">
-                <i class="fa-solid fa-map-location-dot text-red-500 mr-2"></i> Live Incidents Queue
-              </h2>
-              <p class="text-xs text-slate-400">Grouped SOS reports sorted by Emergency Priority Score</p>
+        <!-- Live Incident Operations Deck (8 Cols) -->
+        <div class="lg:col-span-8 space-y-6">
+          
+          <!-- Tactical Coordinates & GIS Radar Simulation -->
+          <div class="ops-panel p-4 overflow-hidden">
+            <div class="flex items-center justify-between pb-3 border-b border-opsBorder">
+              <div class="flex items-center space-x-2">
+                <i class="fa-solid fa-crosshairs text-opsSky text-sm"></i>
+                <h3 class="text-xs font-mono-tabular font-bold uppercase tracking-wider text-slate-200">
+                  TACTICAL HYDROLOGIC SECTOR RADAR &bull; SECTOR 04
+                </h3>
+              </div>
+              <div class="flex items-center space-x-3 text-[11px] font-mono-tabular">
+                <span class="flex items-center gap-1.5 text-red-400">
+                  <span class="w-2 h-2 rounded-full bg-red-500"></span> Cresting: +1.8m
+                </span>
+                <span class="text-slate-400">Dam Discharge: <b class="text-white">42,500 Cusecs</b></span>
+              </div>
             </div>
-            <button id="btnRefreshIncidents" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg transition">
-              <i class="fa-solid fa-rotate mr-1"></i> Refresh
-            </button>
+
+            <!-- Stylized Tactical Grid Display -->
+            <div class="mt-3 relative h-48 bg-opsBase rounded-lg border border-opsBorder overflow-hidden flex items-center justify-center">
+              <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(14,165,233,0.12)_0%,transparent_70%)]"></div>
+              <div class="absolute inset-0" style="background-image: linear-gradient(to right, #1F2E52 1px, transparent 1px), linear-gradient(to bottom, #1F2E52 1px, transparent 1px); background-size: 32px 32px; opacity: 0.45;"></div>
+              
+              <!-- Hotspot Blips -->
+              <div class="absolute top-12 left-24 flex items-center space-x-2">
+                <span class="w-3 h-3 bg-red-500 rounded-full radar-ping"></span>
+                <span class="text-[9px] font-mono-tabular bg-red-950/90 text-red-300 border border-red-800 px-1 rounded">ZONE A (CRITICAL)</span>
+              </div>
+              <div class="absolute bottom-10 right-32 flex items-center space-x-2">
+                <span class="w-2.5 h-2.5 bg-amber-500 rounded-full"></span>
+                <span class="text-[9px] font-mono-tabular bg-amber-950/90 text-amber-300 border border-amber-800 px-1 rounded">RIVERFRONT (URGENT)</span>
+              </div>
+              <div class="absolute top-16 right-48 flex items-center space-x-2">
+                <span class="w-2.5 h-2.5 bg-opsEmerald rounded-full"></span>
+                <span class="text-[9px] font-mono-tabular bg-emerald-950/90 text-emerald-300 border border-emerald-800 px-1 rounded">NDRF ALPHA-1 EN ROUTE</span>
+              </div>
+
+              <div class="text-center z-10 pointer-events-none">
+                <p class="text-xs font-mono-tabular text-slate-300 uppercase tracking-widest font-bold">REAL-TIME INCIDENT CLUSTER MAPPING</p>
+                <p class="text-[10px] text-slate-400 mt-1">Geographic clustering active across 1.5 KM proximity thresholds</p>
+              </div>
+            </div>
           </div>
 
-          <div class="overflow-x-auto">
-            <table class="w-full text-left text-xs">
-              <thead class="bg-slate-950 text-slate-400 uppercase text-[10px] border-b border-slate-800">
-                <tr>
-                  <th class="p-2.5">Severity</th>
-                  <th class="p-2.5">Category & Location</th>
-                  <th class="p-2.5">Priority</th>
-                  <th class="p-2.5">Reports</th>
-                  <th class="p-2.5">Assigned Team</th>
-                  <th class="p-2.5 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody id="incidentsTableBody" class="divide-y divide-slate-800">
-                <!-- Dynamically populated -->
-              </tbody>
-            </table>
+          <!-- Incidents Queue Table -->
+          <div class="ops-panel p-5 shadow-xl">
+            <div class="flex items-center justify-between mb-4 pb-3 border-b border-opsBorder">
+              <div>
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                  <i class="fa-solid fa-list-check text-red-500"></i>
+                  <span>Live Clustered Incidents Queue</span>
+                </h3>
+                <p class="text-[11px] text-slate-400">Ranked by Emergency Priority Score (Formula: Severity + Needs + Vulnerability)</p>
+              </div>
+              <button id="btnRefreshIncidents" class="ops-input text-xs py-1.5 px-3 flex items-center gap-1.5 hover:border-opsSky transition cursor-pointer">
+                <i class="fa-solid fa-rotate text-xs"></i>
+                <span>Refresh Live</span>
+              </button>
+            </div>
+
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs font-sans">
+                <thead class="bg-opsBase text-slate-400 uppercase font-mono-tabular text-[10px] border-b border-opsBorder">
+                  <tr>
+                    <th class="p-3">Severity</th>
+                    <th class="p-3">Category & Area</th>
+                    <th class="p-3">Priority Score</th>
+                    <th class="p-3">Reports</th>
+                    <th class="p-3">Assigned Unit</th>
+                    <th class="p-3 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="incidentsTableBody" class="divide-y divide-opsBorder">
+                  <!-- Dynamically populated -->
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
 
-        <!-- Rescue Teams & Assignment Panel (Col 1) -->
-        <div class="space-y-6">
-          <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl">
-            <h2 class="text-lg font-bold text-white mb-2 flex items-center">
-              <i class="fa-solid fa-truck-medical text-emerald-400 mr-2"></i> Rescue Units
-            </h2>
-            <p class="text-xs text-slate-400 mb-4">NDRF, SDRF & Coast Guard Teams</p>
+        <!-- Tactical Command Sidebar (4 Cols: Rescue Teams & AI Triage) -->
+        <div class="lg:col-span-4 space-y-6">
+          
+          <!-- Rescue Units Tracker -->
+          <div class="ops-panel p-5 shadow-xl">
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                <i class="fa-solid fa-truck-medical text-opsEmerald"></i>
+                <span>Disaster Response Fleet</span>
+              </h3>
+              <span class="text-[10px] font-mono-tabular text-slate-400">NDRF &bull; SDRF</span>
+            </div>
+            <p class="text-[11px] text-slate-400 mb-4">Mutual exclusivity protected by PostgreSQL & Redis Locks</p>
             
             <div id="teamsList" class="space-y-2.5 max-h-[380px] overflow-y-auto pr-1">
               <!-- Dynamically populated -->
             </div>
           </div>
 
-          <!-- AI Model Evaluation Card -->
-          <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl">
-            <h3 class="text-sm font-bold text-white mb-2 flex items-center justify-between">
-              <span><i class="fa-solid fa-brain text-purple-400 mr-2"></i> AI Triage Metrics</span>
-              <span id="aiF1Badge" class="text-xs px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800">F1: 0.846</span>
-            </h3>
-            <div class="space-y-1.5 text-xs text-slate-300">
-              <div class="flex justify-between"><span>Critical Precision:</span><span id="aiPrecision" class="font-mono text-emerald-400">84.6%</span></div>
-              <div class="flex justify-between"><span>Critical Recall:</span><span id="aiRecall" class="font-mono text-emerald-400">84.6%</span></div>
-              <div class="flex justify-between"><span>Multilingual NLP:</span><span class="text-purple-300">EN / HI / TE</span></div>
-              <div class="flex justify-between"><span>Fallback:</span><span class="text-slate-400">Deterministic Keywords</span></div>
+          <!-- AI Model Evaluation & Algorithmic Triage Card -->
+          <div class="ops-panel p-5 shadow-xl border-l-4 border-l-purple-500">
+            <div class="flex items-center justify-between mb-3">
+              <h4 class="text-xs font-bold text-white flex items-center gap-2">
+                <i class="fa-solid fa-brain text-purple-400"></i>
+                <span>Hybrid AI Emergency Triage</span>
+              </h4>
+              <span id="aiF1Badge" class="text-[10px] font-mono-tabular px-2 py-0.5 rounded bg-purple-950 text-purple-300 border border-purple-800 font-bold">
+                F1: 0.846
+              </span>
+            </div>
+
+            <div class="space-y-2 text-xs">
+              <div class="flex justify-between p-2 rounded bg-opsBase border border-opsBorder">
+                <span class="text-slate-400">Critical Precision:</span>
+                <span id="aiPrecision" class="font-mono-tabular font-bold text-opsEmerald">84.6%</span>
+              </div>
+              <div class="flex justify-between p-2 rounded bg-opsBase border border-opsBorder">
+                <span class="text-slate-400">Critical Recall:</span>
+                <span id="aiRecall" class="font-mono-tabular font-bold text-opsEmerald">84.6%</span>
+              </div>
+              <div class="flex justify-between p-2 rounded bg-opsBase border border-opsBorder">
+                <span class="text-slate-400">Multilingual NLP:</span>
+                <span class="font-semibold text-purple-300">English, हिंदी, తెలుగు</span>
+              </div>
+              <div class="flex justify-between p-2 rounded bg-opsBase border border-opsBorder">
+                <span class="text-slate-400">Zero-Loss Fallback:</span>
+                <span class="text-slate-300">Deterministic Keyword Engine</span>
+              </div>
+            </div>
+
+            <div class="mt-4 pt-3 border-t border-opsBorder text-[10px] text-slate-400 leading-relaxed">
+              <i class="fa-solid fa-circle-info text-opsSky mr-1"></i>
+              Extracts high-risk needs (Trapped, Medical, Children/Elderly, Evacuation) without delaying durable SOS persistence.
             </div>
           </div>
+
         </div>
 
       </div>
     </section>
 
-    <!-- VIEW 3: BROADCAST SYSTEM -->
+    <!-- ================= VIEW 3: BROADCAST SYSTEM ================= -->
     <section id="viewBroadcast" class="hidden space-y-6">
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
-        <!-- Broadcast Form (1 col) -->
-        <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl">
-          <h2 class="text-lg font-bold text-white mb-1 flex items-center">
-            <i class="fa-solid fa-bullhorn text-amber-500 mr-2"></i> Issue Zone Warning
-          </h2>
-          <p class="text-xs text-slate-400 mb-4">RabbitMQ Fan-Out across SMS, Push & Email</p>
+        <!-- Broadcast Form (5 cols) -->
+        <div class="lg:col-span-5 ops-panel p-6 shadow-xl">
+          <div class="flex items-center space-x-2.5 mb-1">
+            <div class="w-7 h-7 rounded bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/30">
+              <i class="fa-solid fa-bullhorn text-xs"></i>
+            </div>
+            <h3 class="text-sm font-bold text-white">Create Warning Broadcast</h3>
+          </div>
+          <p class="text-[11px] text-slate-400 mb-5">RabbitMQ Fan-Out Engine &bull; Target: 300,000 Deliveries</p>
 
-          <form id="broadcastForm" class="space-y-3.5">
+          <form id="broadcastForm" class="space-y-4">
             <div>
-              <label class="block text-xs font-semibold text-slate-300 mb-1">TARGET ZONE</label>
-              <select id="bZone" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs text-slate-100">
-                <option value="ALL">All Flood Zones (100,000 Residents)</option>
+              <label class="block text-xs font-semibold text-slate-300 mb-1.5 uppercase font-mono-tabular">TARGET INUNDATION ZONE</label>
+              <select id="bZone" class="ops-input w-full">
+                <option value="ALL">All Flood Zones (100,000 Synthetic Residents)</option>
                 <option value="Hyderabad Metro Flood Zone">Hyderabad Metro Flood Zone</option>
                 <option value="Vijayawada Krishna Riverfront">Vijayawada Krishna Riverfront</option>
                 <option value="Warangal Lowlands">Warangal Lowlands</option>
@@ -297,8 +643,8 @@
             </div>
 
             <div>
-              <label class="block text-xs font-semibold text-slate-300 mb-1">SEVERITY LEVEL</label>
-              <select id="bSeverity" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs text-slate-100">
+              <label class="block text-xs font-semibold text-slate-300 mb-1.5 uppercase font-mono-tabular">SEVERITY LEVEL</label>
+              <select id="bSeverity" class="ops-input w-full font-semibold">
                 <option value="RED_ALERT">RED ALERT — Immediate Evacuation Required</option>
                 <option value="ORANGE_ALERT">ORANGE ALERT — Water Level Surging</option>
                 <option value="YELLOW_ALERT">YELLOW ALERT — Advisory & Caution</option>
@@ -306,75 +652,91 @@
             </div>
 
             <div>
-              <label class="block text-xs font-semibold text-slate-300 mb-1">ALERT TITLE</label>
-              <input type="text" id="bTitle" value="FLASH FLOOD RED WARNING: Musi River Basin" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs text-slate-100">
+              <label class="block text-xs font-semibold text-slate-300 mb-1.5 uppercase font-mono-tabular">ALERT HEADLINE</label>
+              <input type="text" id="bTitle" value="FLASH FLOOD RED WARNING: Musi River Basin" class="ops-input w-full font-bold">
             </div>
 
             <div>
-              <label class="block text-xs font-semibold text-slate-300 mb-1">ENGLISH MESSAGE</label>
-              <textarea id="bMsgEn" rows="2" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs text-slate-100">Severe flooding expected within 2 hours. Move immediately to higher ground or relief centers.</textarea>
+              <label class="block text-xs font-semibold text-slate-300 mb-1.5 uppercase font-mono-tabular">ENGLISH WARNING</label>
+              <textarea id="bMsgEn" rows="2" class="ops-input w-full resize-none">Severe flooding expected within 2 hours. Move immediately to higher ground or relief centers.</textarea>
             </div>
 
             <div>
-              <label class="block text-xs font-semibold text-slate-300 mb-1">HINDI (हिंदी) MESSAGE</label>
-              <textarea id="bMsgHi" rows="2" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs text-slate-100">भारी बाढ़ की चेतावनी। तुरंत ऊंचे स्थानों या राहत शिविरों की ओर जाएं।</textarea>
+              <label class="block text-xs font-semibold text-slate-300 mb-1.5 uppercase font-mono-tabular">HINDI (हिंदी) WARNING</label>
+              <textarea id="bMsgHi" rows="2" class="ops-input w-full resize-none">भारी बाढ़ की चेतावनी। तुरंत ऊंचे स्थानों या राहत शिविरों की ओर जाएं।</textarea>
             </div>
 
             <div>
-              <label class="block text-xs font-semibold text-slate-300 mb-1">TELUGU (తెలుగు) MESSAGE</label>
-              <textarea id="bMsgTe" rows="2" class="w-full bg-slate-950 border border-slate-700 rounded-lg p-2 text-xs text-slate-100">తీవ్రమైన వరద హెచ్చరిక. వెంటనే సురక్షిత ప్రాంతాలకు లేదా పునరావాస కేంద్రాలకు చేరుకోండి.</textarea>
+              <label class="block text-xs font-semibold text-slate-300 mb-1.5 uppercase font-mono-tabular">TELUGU (తెలుగు) WARNING</label>
+              <textarea id="bMsgTe" rows="2" class="ops-input w-full resize-none">తీవ్రమైన వరద హెచ్చరిక. వెంటనే సురక్షిత ప్రాంతాలకు లేదా పునరావాస కేంద్రాలకు చేరుకోండి.</textarea>
             </div>
 
-            <button type="submit" id="btnDispatchBroadcast" class="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-2.5 rounded-lg text-xs tracking-wide transition">
-              <i class="fa-solid fa-paper-plane mr-1"></i> DISPATCH 300,000 ALERT JOBS
+            <button type="submit" id="btnDispatchBroadcast" class="w-full bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-white font-bold py-3 rounded-lg text-xs tracking-wider uppercase transition shadow-lg shadow-amber-950/60 border border-amber-500/40 cursor-pointer">
+              <i class="fa-solid fa-paper-plane mr-1.5"></i> DISPATCH 300,000 ALERT JOBS
             </button>
           </form>
 
-          <div class="mt-4 pt-3 border-t border-slate-800">
-            <button id="btnSeedResidents" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 py-2 rounded-lg text-xs font-medium transition">
-              <i class="fa-solid fa-users mr-1"></i> Seed 100,000 Synthetic Residents
+          <div class="mt-5 pt-4 border-t border-opsBorder">
+            <button id="btnSeedResidents" class="w-full bg-opsBase hover:bg-opsSurface2 text-slate-300 py-2.5 rounded-lg text-xs font-medium border border-opsBorder transition flex items-center justify-center gap-2 cursor-pointer">
+              <i class="fa-solid fa-users text-opsSky"></i>
+              <span>Seed 100,000 Synthetic Residents</span>
             </button>
           </div>
         </div>
 
-        <!-- Broadcast Campaigns & Progress (2 cols) -->
-        <div class="lg:col-span-2 space-y-6">
-          <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl">
-            <div class="flex items-center justify-between mb-4">
+        <!-- Telemetry Monitors (7 cols) -->
+        <div class="lg:col-span-7 space-y-6">
+          <div class="ops-panel p-6 shadow-xl">
+            <div class="flex items-center justify-between mb-5 pb-3 border-b border-opsBorder">
               <div>
-                <h3 class="text-lg font-bold text-white flex items-center">
-                  <i class="fa-solid fa-chart-line text-blue-400 mr-2"></i> Delivery Channel Monitor
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                  <i class="fa-solid fa-chart-column text-opsSky"></i>
+                  <span>Delivery Pipeline Telemetry</span>
                 </h3>
-                <p class="text-xs text-slate-400">Independent SMS, Email & Push Pipelines</p>
+                <p class="text-[11px] text-slate-400">Independent Channel Workers with Dead-Letter Handling</p>
               </div>
-              <button id="btnRefreshBroadcasts" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg transition">
+              <button id="btnRefreshBroadcasts" class="ops-input text-xs py-1 px-2.5 hover:border-opsSky transition cursor-pointer">
                 <i class="fa-solid fa-rotate mr-1"></i> Refresh
               </button>
             </div>
 
-            <div class="grid grid-cols-3 gap-3 mb-6">
-              <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 text-center">
-                <i class="fa-solid fa-comment-sms text-2xl text-blue-400 mb-2"></i>
-                <h4 class="text-xs font-semibold text-slate-400">SMS Pipeline</h4>
-                <p id="smsDeliveredCount" class="text-xl font-bold text-white mt-1">0</p>
-                <span id="smsStatusBadge" class="text-[10px] px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800 mt-2 inline-block">HEALTHY</span>
+            <!-- 3 Isolated Channel Metrics -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
+              <div class="bg-opsBase p-4 rounded-xl border border-opsBorder text-center">
+                <div class="w-8 h-8 rounded-lg bg-blue-500/10 text-opsSky flex items-center justify-center mx-auto mb-2 border border-blue-500/20">
+                  <i class="fa-solid fa-comment-sms text-sm"></i>
+                </div>
+                <h4 class="text-xs font-mono-tabular font-semibold text-slate-400 uppercase">SMS Channel</h4>
+                <p id="smsDeliveredCount" class="text-2xl font-mono-tabular font-black text-white mt-1">0</p>
+                <span id="smsStatusBadge" class="text-[10px] font-mono-tabular px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800 mt-2 inline-block">
+                  ACTIVE &bull; 100% HEALTHY
+                </span>
               </div>
-              <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 text-center">
-                <i class="fa-solid fa-bell text-2xl text-purple-400 mb-2"></i>
-                <h4 class="text-xs font-semibold text-slate-400">Push Notifications</h4>
-                <p id="pushDeliveredCount" class="text-xl font-bold text-white mt-1">0</p>
-                <span id="pushStatusBadge" class="text-[10px] px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800 mt-2 inline-block">HEALTHY</span>
+              <div class="bg-opsBase p-4 rounded-xl border border-opsBorder text-center">
+                <div class="w-8 h-8 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center mx-auto mb-2 border border-purple-500/20">
+                  <i class="fa-solid fa-bell text-sm"></i>
+                </div>
+                <h4 class="text-xs font-mono-tabular font-semibold text-slate-400 uppercase">Mobile Push</h4>
+                <p id="pushDeliveredCount" class="text-2xl font-mono-tabular font-black text-white mt-1">0</p>
+                <span id="pushStatusBadge" class="text-[10px] font-mono-tabular px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800 mt-2 inline-block">
+                  ACTIVE &bull; 100% HEALTHY
+                </span>
               </div>
-              <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 text-center">
-                <i class="fa-solid fa-envelope text-2xl text-amber-400 mb-2"></i>
-                <h4 class="text-xs font-semibold text-slate-400">Email Gateway</h4>
-                <p id="emailDeliveredCount" class="text-xl font-bold text-white mt-1">0</p>
-                <span id="emailStatusBadge" class="text-[10px] px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800 mt-2 inline-block">HEALTHY</span>
+              <div class="bg-opsBase p-4 rounded-xl border border-opsBorder text-center">
+                <div class="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center mx-auto mb-2 border border-amber-500/20">
+                  <i class="fa-solid fa-envelope text-sm"></i>
+                </div>
+                <h4 class="text-xs font-mono-tabular font-semibold text-slate-400 uppercase">Email Gateway</h4>
+                <p id="emailDeliveredCount" class="text-2xl font-mono-tabular font-black text-white mt-1">0</p>
+                <span id="emailStatusBadge" class="text-[10px] font-mono-tabular px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800 mt-2 inline-block">
+                  ACTIVE &bull; 100% HEALTHY
+                </span>
               </div>
             </div>
 
-            <h4 class="text-xs font-bold uppercase text-slate-400 mb-2">Broadcast Campaigns Log</h4>
-            <div id="campaignsList" class="space-y-2 max-h-[300px] overflow-y-auto">
+            <!-- Campaign History Log -->
+            <h4 class="text-xs font-mono-tabular uppercase font-bold text-slate-400 mb-3">Broadcast Campaigns Log</h4>
+            <div id="campaignsList" class="space-y-2.5 max-h-[300px] overflow-y-auto pr-1">
               <!-- Dynamically populated -->
             </div>
           </div>
@@ -383,75 +745,95 @@
       </div>
     </section>
 
-    <!-- VIEW 4: FAILURE SIMULATION & RESILIENCE DRILLS -->
+    <!-- ================= VIEW 4: FAILURE SIMULATION & RESILIENCE DRILLS ================= -->
     <section id="viewDrills" class="hidden max-w-4xl mx-auto space-y-6">
-      <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl">
-        <h2 class="text-xl font-bold text-white mb-2 flex items-center">
-          <i class="fa-solid fa-shield-virus text-red-500 mr-2"></i> Resilience & Chaos Drill Control Center
-        </h2>
-        <p class="text-xs text-slate-400 mb-6">Demonstrates channel isolation, dead-letter queues, idempotent retry and concurrent safety.</p>
+      <div class="ops-panel p-6 sm:p-8 shadow-xl border-t-4 border-t-opsSky">
+        <div class="flex items-center space-x-3 mb-2">
+          <div class="w-9 h-9 rounded-lg bg-opsSky/10 text-opsSky flex items-center justify-center border border-opsSky/30">
+            <i class="fa-solid fa-shield-virus text-base"></i>
+          </div>
+          <div>
+            <h2 class="text-xl font-bold text-white">Resilience & Chaos Engineering Drills</h2>
+            <p class="text-xs text-slate-400">Verifying non-negotiable disaster reliability invariants under failure</p>
+          </div>
+        </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
           <!-- Drill 1: Disable SMS -->
-          <div class="bg-slate-950 border border-slate-800 p-4 rounded-xl flex flex-col justify-between">
+          <div class="bg-opsBase border border-opsBorder p-4 rounded-xl flex flex-col justify-between hover:border-opsBorderLight transition">
             <div>
-              <h3 class="text-sm font-bold text-white flex items-center">
-                <i class="fa-solid fa-tower-cell text-blue-400 mr-2"></i> SMS Provider Outage
-              </h3>
-              <p class="text-xs text-slate-400 mt-1">Simulates 100% gateway failure for SMS while Email & Push run unaffected.</p>
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-mono-tabular font-semibold text-opsSky">DRILL 01</span>
+                <i class="fa-solid fa-tower-cell text-slate-500"></i>
+              </div>
+              <h3 class="text-sm font-bold text-white mt-2">SMS Gateway Outage</h3>
+              <p class="text-[11px] text-slate-400 mt-1 leading-relaxed">
+                Simulates 100% SMS failure while Push and Email continue with zero latency or cross-channel blocking.
+              </p>
             </div>
-            <div class="mt-4 flex items-center justify-between">
-              <span id="txtSmsStatus" class="text-xs text-emerald-400">Provider Online</span>
-              <button id="toggleSmsFailure" class="text-xs bg-red-950 hover:bg-red-900 text-red-300 border border-red-800 px-3 py-1.5 rounded-lg transition">
+            <div class="mt-4 pt-3 border-t border-opsBorder flex items-center justify-between">
+              <span id="txtSmsStatus" class="text-xs font-mono-tabular text-opsEmerald">Online</span>
+              <button id="toggleSmsFailure" class="text-xs bg-red-950/80 hover:bg-red-900 text-red-300 border border-red-800 px-3 py-1.5 rounded-lg transition cursor-pointer">
                 Simulate Outage
               </button>
             </div>
           </div>
 
           <!-- Drill 2: Disable Email -->
-          <div class="bg-slate-950 border border-slate-800 p-4 rounded-xl flex flex-col justify-between">
+          <div class="bg-opsBase border border-opsBorder p-4 rounded-xl flex flex-col justify-between hover:border-opsBorderLight transition">
             <div>
-              <h3 class="text-sm font-bold text-white flex items-center">
-                <i class="fa-solid fa-envelope-open-text text-amber-400 mr-2"></i> Email Provider Outage
-              </h3>
-              <p class="text-xs text-slate-400 mt-1">Simulates SMTP throttling and dead-letter queue routing.</p>
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-mono-tabular font-semibold text-amber-400">DRILL 02</span>
+                <i class="fa-solid fa-envelope-open-text text-slate-500"></i>
+              </div>
+              <h3 class="text-sm font-bold text-white mt-2">Email Throttling & DLQ</h3>
+              <p class="text-[11px] text-slate-400 mt-1 leading-relaxed">
+                Tests exponential backoff retry and automatic Dead-Letter Queue (DLQ) containment under SMTP failure.
+              </p>
             </div>
-            <div class="mt-4 flex items-center justify-between">
-              <span id="txtEmailStatus" class="text-xs text-emerald-400">Provider Online</span>
-              <button id="toggleEmailFailure" class="text-xs bg-red-950 hover:bg-red-900 text-red-300 border border-red-800 px-3 py-1.5 rounded-lg transition">
+            <div class="mt-4 pt-3 border-t border-opsBorder flex items-center justify-between">
+              <span id="txtEmailStatus" class="text-xs font-mono-tabular text-opsEmerald">Online</span>
+              <button id="toggleEmailFailure" class="text-xs bg-red-950/80 hover:bg-red-900 text-red-300 border border-red-800 px-3 py-1.5 rounded-lg transition cursor-pointer">
                 Simulate Outage
               </button>
             </div>
           </div>
 
           <!-- Drill 3: Two Application Instances -->
-          <div class="bg-slate-950 border border-slate-800 p-4 rounded-xl flex flex-col justify-between">
+          <div class="bg-opsBase border border-opsBorder p-4 rounded-xl flex flex-col justify-between hover:border-opsBorderLight transition">
             <div>
-              <h3 class="text-sm font-bold text-white flex items-center">
-                <i class="fa-solid fa-network-wired text-purple-400 mr-2"></i> Dual Instance Load
-              </h3>
-              <p class="text-xs text-slate-400 mt-1">Stateless API nodes connected to shared DB, Redis & RabbitMQ.</p>
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-mono-tabular font-semibold text-purple-400">DRILL 03</span>
+                <i class="fa-solid fa-network-wired text-slate-500"></i>
+              </div>
+              <h3 class="text-sm font-bold text-white mt-2">Dual Node Load Balancing</h3>
+              <p class="text-[11px] text-slate-400 mt-1 leading-relaxed">
+                Verifies stateless round-robin distribution over shared WAL Database and Redis synchronization.
+              </p>
             </div>
-            <div class="mt-4 flex items-center justify-between">
-              <span class="text-xs text-purple-400">Load Balancer Active</span>
-              <button id="btnInstanceProbe" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg transition">
+            <div class="mt-4 pt-3 border-t border-opsBorder flex items-center justify-between">
+              <span class="text-xs font-mono-tabular text-purple-400">Node Active</span>
+              <button id="btnInstanceProbe" class="text-xs bg-opsSurface2 hover:bg-opsSurface3 text-slate-300 border border-opsBorder px-3 py-1.5 rounded-lg transition cursor-pointer">
                 Probe Node
               </button>
             </div>
           </div>
         </div>
 
-        <div class="mt-6 pt-4 border-t border-slate-800 flex justify-between items-center text-xs text-slate-400">
-          <span><i class="fa-solid fa-circle-check text-emerald-400 mr-1"></i> Non-negotiable challenge drills verified and operational</span>
-          <span id="instanceProbeResult" class="font-mono text-purple-300">Served by: instance-A</span>
+        <div class="mt-6 pt-4 border-t border-opsBorder flex flex-col sm:flex-row justify-between items-center text-xs text-slate-400 gap-2">
+          <span><i class="fa-solid fa-circle-check text-opsEmerald mr-1"></i> Idempotent retry & channel isolation verified</span>
+          <span id="instanceProbeResult" class="font-mono-tabular text-opsSky bg-opsBase px-3 py-1 rounded border border-opsBorder">
+            Active: instance-A (Port 4000)
+          </span>
         </div>
       </div>
     </section>
 
   </main>
 
-  <footer class="bg-slate-900 border-t border-slate-800 py-3 text-center text-xs text-slate-500">
-    AlertNet Emergency Response Platform &bull; Built by Code Alchemists &bull; 6-Hour Autonomous Execution
+  <!-- Mission Footer -->
+  <footer class="bg-opsSurface1 border-t border-opsBorder py-3.5 px-4 text-center text-xs text-slate-400 font-mono-tabular">
+    <span>AlertNet Disaster Management Platform &bull; Built by Team Code Alchemists &bull; 6-Hour Autonomous Build</span>
   </footer>
 
   <script src="/app.js"></script>
